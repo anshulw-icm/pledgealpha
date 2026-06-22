@@ -10,6 +10,15 @@ const UA = 'Mozilla/5.0 (compatible; PledgeAlpha/1.0; +https://pledgealpha.verce
 const NIFTY  = 'https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI'
 const BNIFTY = 'https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEBANK'
 
+// Persists across 15-min cache invalidations — uses real recent prices as fallback
+let lastKnownGood = {
+  nifty: 24000,
+  banknifty: 52000,
+  niftyVol: 0.15,
+  bankniftyVol: 0.20,
+  savedAt: 0,
+}
+
 async function fetchSpot(url: string, fallback: number): Promise<number> {
   try {
     const res = await fetch(`${url}?interval=1d&range=1d`, {
@@ -47,17 +56,20 @@ async function fetchVol(url: string, fallback: number): Promise<number> {
 }
 
 export async function getMarketData(): Promise<MarketData> {
+  const lkg = lastKnownGood
   const [nifty, banknifty, niftyVol, bankniftyVol] = await Promise.all([
-    fetchSpot(NIFTY,  24000),
-    fetchSpot(BNIFTY, 52000),
-    fetchVol(NIFTY,   0.15),
-    fetchVol(BNIFTY,  0.20),
+    fetchSpot(NIFTY,  lkg.nifty),
+    fetchSpot(BNIFTY, lkg.banknifty),
+    fetchVol(NIFTY,   lkg.niftyVol),
+    fetchVol(BNIFTY,  lkg.bankniftyVol),
   ])
-  return {
-    nifty,
-    banknifty,
-    niftyVol,
-    bankniftyVol,
-    isStale: nifty === 24000 && banknifty === 52000,
+
+  // Stale = got same values as our fallback AND we've had a good fetch before
+  const isStale = nifty === lkg.nifty && banknifty === lkg.banknifty && lkg.savedAt > 0
+
+  if (!isStale) {
+    lastKnownGood = { nifty, banknifty, niftyVol, bankniftyVol, savedAt: Date.now() }
   }
+
+  return { nifty, banknifty, niftyVol, bankniftyVol, isStale }
 }

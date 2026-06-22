@@ -33,15 +33,40 @@ model Session {
 }
 
 model User {
-  id            String      @id @default(cuid())
-  name          String?
-  email         String?     @unique
-  emailVerified DateTime?
-  image         String?
-  createdAt     DateTime    @default(now())
-  accounts      Account[]
-  sessions      Session[]
-  portfolios    Portfolio[]
+  id              String            @id @default(cuid())
+  name            String?
+  email           String?           @unique
+  emailVerified   DateTime?
+  image           String?
+  createdAt       DateTime          @default(now())
+  accounts        Account[]
+  sessions        Session[]
+  portfolios      Portfolio[]
+  simulatedTrades SimulatedTrade[]
+}
+
+model SimulatedTrade {
+  id                  String   @id @default(cuid())
+  userId              String
+  portfolioId         String
+  strategyName        String
+  underlying          String
+  expiryLabel         String
+  expiryIsoDate       String
+  riskAppetite        String
+  spotAtEntry         Float
+  netPremium          Float
+  maxProfit           Float
+  maxLoss             Float
+  marginRequired      Float
+  breakevenUpper      Float
+  breakevenLower      Float?
+  probabilityOfProfit Float
+  annualizedYield     Float
+  legsJson            String   @db.Text
+  status              String   @default("active")
+  createdAt           DateTime @default(now())
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Portfolio {

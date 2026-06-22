@@ -141,6 +141,24 @@ export default function UploadPage() {
     updateRow(i, "lookingUp", false);
   }
 
+  function handleLoadDemo() {
+    const demoHoldings = [
+      { name: "Axis Bluechip Fund - Direct Plan - Growth", schemeCode: "120465", units: 500, nav: 52.34 },
+      { name: "HDFC Mid-Cap Opportunities Fund - Direct - Growth", schemeCode: "100270", units: 200, nav: 98.76 },
+      { name: "SBI Liquid Fund - Direct Plan - Growth", schemeCode: "119020", units: 100, nav: 3542.18 },
+      { name: "Mirae Asset Large Cap Fund - Direct - Growth", schemeCode: "118989", units: 350, nav: 91.22 },
+      { name: "Parag Parikh Flexi Cap Fund - Direct - Growth", schemeCode: "122639", units: 450, nav: 67.85 },
+      { name: "ICICI Pru Nifty 50 Index Fund - Direct - Growth", schemeCode: "120586", units: 800, nav: 28.43 },
+      { name: "Kotak Gilt Fund - Direct Plan - Growth", schemeCode: "120177", units: 150, nav: 105.60 },
+      { name: "Nippon India Small Cap Fund - Direct - Growth", schemeCode: "118778", units: 300, nav: 142.33 },
+      { name: "Aditya Birla SL Banking & PSU Debt - Direct", schemeCode: "119551", units: 1200, nav: 28.91 },
+      { name: "UTI Nifty 50 ETF", schemeCode: "135000", units: 600, nav: 247.15 },
+    ]
+    const parsed = demoHoldings.map(h => calculateHolding(h))
+    setHoldings(parsed)
+    setStep("review")
+  }
+
   function handleManualSubmit() {
     setError(null);
     try {
@@ -211,6 +229,20 @@ export default function UploadPage() {
               <p className="text-pa-text-2 text-[14px] mt-1">
                 Your data stays on your device until you choose to save.
               </p>
+            </div>
+
+            {/* Demo portfolio banner */}
+            <div className="bg-pa-surface-1 border border-pa-border-2 rounded-xl p-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-pa-text-1 text-[14px] font-medium">Try with a sample portfolio</p>
+                <p className="text-pa-text-3 text-[12px] mt-0.5">10 real mutual fund schemes · instant load</p>
+              </div>
+              <button
+                onClick={handleLoadDemo}
+                className="h-9 px-4 bg-white text-black text-[13px] font-medium rounded-xl hover:bg-pa-text-1 transition-colors shrink-0"
+              >
+                Load Demo Portfolio →
+              </button>
             </div>
 
             <div className="grid gap-2.5">
