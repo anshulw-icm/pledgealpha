@@ -321,7 +321,7 @@ function ResultsView({
   const anyAI = strategies.some((s) => s.aiPowered);
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "var(--pa-black)", paddingBottom: 80 }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "var(--pa-black)", paddingBottom: 100 }}>
       <header style={{
         height: 56, display: "flex", alignItems: "center", padding: "0 20px", gap: 16,
         borderBottom: "1px solid var(--pa-border-1)",
@@ -389,6 +389,31 @@ function ResultsView({
           </p>
         </div>
       </main>
+
+      {/* Sticky yield CTA */}
+      <div style={{
+        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, height: 64,
+        backgroundColor: "rgba(44,44,46,0.95)", backdropFilter: "blur(16px)",
+        borderTop: "1px solid var(--pa-border-1)",
+        display: "flex", alignItems: "center",
+      }}>
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 20px", width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <p style={{ fontSize: 13, color: "var(--pa-text-2)", margin: 0 }}>
+            Curious what this means for your annual return?
+          </p>
+          <Link
+            href={`/dashboard/yield?risk=${riskOpt.key}`}
+            style={{
+              height: 36, padding: "0 18px", borderRadius: 10, backgroundColor: "#ffffff",
+              color: "#000000", fontSize: 13, fontWeight: 600, textDecoration: "none",
+              display: "inline-flex", alignItems: "center", whiteSpace: "nowrap",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            See Yield Impact →
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

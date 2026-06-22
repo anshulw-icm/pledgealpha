@@ -137,6 +137,29 @@ export default async function DashboardPage() {
               </Link>
             </div>
 
+            {/* Yield comparison CTA — only when portfolio has pledgeable value */}
+            {pledgeableValue > 0 && (
+              <div className="bg-pa-surface-1 border border-pa-border-1 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-pa-text-1 font-medium text-[15px] tracking-[-0.01em]">
+                    See Your Yield Potential
+                  </p>
+                  <p className="text-pa-text-2 text-[13px] mt-1">
+                    Compare passive portfolio returns vs a simulated options overlay on your{" "}
+                    <span className="text-pa-profit font-medium">{INR(pledgeableValue)}</span> pledged margin.
+                  </p>
+                  <p className="text-pa-text-4 text-[11px] mt-1">
+                    Simulation only · Category benchmark rates · Not investment advice
+                  </p>
+                </div>
+                <Link href="/dashboard/yield?risk=moderate">
+                  <Button className="bg-white hover:bg-pa-text-1 text-black font-medium shrink-0 text-[13px]">
+                    Compare Yield →
+                  </Button>
+                </Link>
+              </div>
+            )}
+
             {/* Holdings list */}
             <div className="bg-pa-surface-1 border border-pa-border-1 rounded-2xl overflow-hidden">
               <div className="px-5 py-4 border-b border-pa-border-1 flex items-center justify-between">

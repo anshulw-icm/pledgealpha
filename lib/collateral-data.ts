@@ -37,6 +37,23 @@ export const COLLATERAL_RULES: Record<AssetType, CollateralRule> = {
   OTHER:           { haircut: 0.50, isPledgeable: false, label: "Other (Ineligible)" },
 };
 
+// Category benchmark XIRR rates (5-year rolling AMFI averages).
+// Used for passive portfolio yield estimation only — NOT actual returns.
+export const BENCHMARK_XIRR: Record<AssetType, number> = {
+  MF_LARGE_CAP:    0.13,   // 13%
+  MF_MID_CAP:      0.16,   // 16%
+  MF_SMALL_CAP:    0.18,   // 18%
+  MF_DEBT:         0.07,   // 7%
+  MF_LIQUID:       0.065,  // 6.5%
+  ETF_LARGE_CAP:   0.13,   // 13%
+  ETF_MID_CAP:     0.15,   // 15%
+  GOVT_BOND:       0.07,   // 7%
+  CORP_BOND_AAA:   0.08,   // 8%
+  EQUITY_NIFTY50:  0.13,   // 13%
+  EQUITY_NIFTY100: 0.12,   // 12%
+  OTHER:           0.08,   // 8% fallback
+};
+
 // Keyword-based classifier — maps scheme name fragments to asset types.
 // Checks in priority order: liquid → gilt → debt → small → mid → large/etf.
 export function classifyAsset(name: string): AssetType {
