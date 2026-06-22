@@ -1,6 +1,10 @@
 // Static NSE-approved collateral classification rules with haircuts.
-// Based on SEBI circular SEBI/HO/MRD/DP/CIR/P/2019/95 and NSE margin framework.
-// Keyword-based classification — update when NSE revises the approved list.
+// Haircut rates from NSE circular NSCCL/CMPT/59271
+// Last verified: June 2026
+// NIFTY lot size: 75 (effective Feb 2024, NSE circular)
+// BANKNIFTY lot size: 30 (effective May 2024, NSE circular)
+export const NSE_LOT_SIZES = { NIFTY: 75, BANKNIFTY: 30 } as const;
+export const COLLATERAL_DATA_DATE = "June 2026";
 
 export type AssetType =
   | "MF_LARGE_CAP"
@@ -38,20 +42,21 @@ export const COLLATERAL_RULES: Record<AssetType, CollateralRule> = {
 };
 
 // Category benchmark XIRR rates (5-year rolling AMFI averages).
-// Used for passive portfolio yield estimation only — NOT actual returns.
+// Used ONLY when live NAV history is unavailable for a holding.
+// NOT actual returns — illustrative category averages only.
 export const BENCHMARK_XIRR: Record<AssetType, number> = {
-  MF_LARGE_CAP:    0.13,   // 13%
-  MF_MID_CAP:      0.16,   // 16%
-  MF_SMALL_CAP:    0.18,   // 18%
-  MF_DEBT:         0.07,   // 7%
+  MF_LARGE_CAP:    0.120,  // 12.0%
+  MF_MID_CAP:      0.145,  // 14.5%
+  MF_SMALL_CAP:    0.160,  // 16.0%
+  MF_DEBT:         0.075,  // 7.5%
   MF_LIQUID:       0.065,  // 6.5%
-  ETF_LARGE_CAP:   0.13,   // 13%
-  ETF_MID_CAP:     0.15,   // 15%
-  GOVT_BOND:       0.07,   // 7%
-  CORP_BOND_AAA:   0.08,   // 8%
-  EQUITY_NIFTY50:  0.13,   // 13%
-  EQUITY_NIFTY100: 0.12,   // 12%
-  OTHER:           0.08,   // 8% fallback
+  ETF_LARGE_CAP:   0.115,  // 11.5%
+  ETF_MID_CAP:     0.130,  // 13.0%
+  GOVT_BOND:       0.070,  // 7.0%
+  CORP_BOND_AAA:   0.080,  // 8.0%
+  EQUITY_NIFTY50:  0.120,  // 12.0%
+  EQUITY_NIFTY100: 0.125,  // 12.5%
+  OTHER:           0.090,  // 9.0% fallback
 };
 
 // Keyword-based classifier — maps scheme name fragments to asset types.

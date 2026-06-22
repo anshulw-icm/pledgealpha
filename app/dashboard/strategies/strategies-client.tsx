@@ -375,6 +375,7 @@ function ResultsView({
               chartOpen={openChartIdx === i}
               onToggleChart={() => setOpenChartIdx(openChartIdx === i ? null : i)}
               riskOpt={riskOpt}
+              isStale={marketData.isStale}
             />
           ))}
         </div>
@@ -427,6 +428,7 @@ function StrategyCard({
   chartOpen,
   onToggleChart,
   riskOpt,
+  isStale,
 }: {
   strategy: ExplainedStrategy;
   marginAvailable: number;
@@ -434,6 +436,7 @@ function StrategyCard({
   chartOpen: boolean;
   onToggleChart: () => void;
   riskOpt: typeof RISK_OPTIONS[number];
+  isStale: boolean;
 }) {
   const marginPct = Math.min(s.marginRequired / marginAvailable, 1);
   const barColor = marginPct < 0.5 ? "var(--pa-profit)" : marginPct < 0.75 ? "var(--pa-warning)" : "var(--pa-loss)";
@@ -486,6 +489,16 @@ function StrategyCard({
             </span>
           )}
         </div>
+      </div>
+
+      {/* Data provenance */}
+      <div style={{ padding: "6px 18px", borderBottom: "1px solid var(--pa-border-1)", backgroundColor: "var(--pa-surface-2)" }}>
+        <p style={{ fontSize: 11, color: "var(--pa-text-4)", margin: 0, fontVariantNumeric: "tabular-nums" }}>
+          Priced at {s.underlying} {s.spotAtGeneration.toLocaleString("en-IN")}
+          {" · "}{isStale ? "⚠ Fallback price" : "Live (5-min delay)"}
+          {" · "}Vol {(s.hvUsed * 100).toFixed(1)}%
+          {" · "}BS model
+        </p>
       </div>
 
       {/* Main metrics — Bearprint big number style */}

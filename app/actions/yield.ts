@@ -6,7 +6,8 @@ import { getMarketData } from "@/lib/market-data";
 import { getNiftyExpiry, getBankNiftyExpiry } from "@/lib/expiry";
 import { generateCandidates } from "@/lib/strategy-engine";
 import { explainStrategies } from "@/lib/ai-explainer";
-import { COLLATERAL_RULES, BENCHMARK_XIRR, type AssetType } from "@/lib/collateral-data";
+import { COLLATERAL_RULES, type AssetType } from "@/lib/collateral-data";
+import { getFundReturns, getEffectiveRate } from "@/lib/fund-returns";
 import type { RiskAppetite } from "@/app/actions/strategy";
 import type { AIExplanation } from "@/lib/strategy-types";
 
@@ -14,8 +15,10 @@ export interface HoldingBreakdownItem {
   name: string;
   assetType: string;
   assetLabel: string;
-  benchmarkRate: number;
+  returnRate: number;                    // rate actually used in calculation
+  returnSource: "live" | "benchmark";   // where the rate came from
   value: number;
+  annualContribution: number;           // ₹ this holding contributes per year
 }
 
 export interface PassiveAnalysis {
@@ -24,6 +27,8 @@ export interface PassiveAnalysis {
   pledgeableValue: number;
   projectedMonthlyReturn: number;
   holdingBreakdown: HoldingBreakdownItem[];
+  liveDataCount: number;
+  benchmarkCount: number;
 }
 
 export interface OverlayAnalysis {
@@ -39,6 +44,8 @@ export interface OverlayAnalysis {
   score: number;
   aiPowered: boolean;
   explanation: AIExplanation;
+  hvUsed: number;
+  isStale: boolean;
 }
 
 export interface ComparisonData {
@@ -70,20 +77,43 @@ export async function getYieldAnalysis(riskAppetite: RiskAppetite = "moderate"):
   const pledgeableValue = holdings.reduce((s, h) => s + h.pledgeableValue, 0);
   if (totalValue === 0) throw new Error("Portfolio has no holdings with value.");
 
-  // Passive XIRR — weighted average of benchmark rates by holding value
+  // Fetch live 1-year NAV returns in parallel, fall back to benchmarks
+  const fundReturns = await getFundReturns(
+    holdings.map((h) => ({
+      schemeCode: h.schemeCode ?? undefined,
+      assetType: h.assetType,
+      name: h.name,
+    }))
+  );
+
   let weightedSum = 0;
+  let liveDataCount = 0;
+  let benchmarkCount = 0;
   const holdingBreakdown: HoldingBreakdownItem[] = [];
 
   for (const h of holdings) {
-    const rate = BENCHMARK_XIRR[h.assetType as AssetType] ?? 0.08;
+    const key = h.schemeCode ?? h.name;
+    const fr = fundReturns.get(key);
     const rule = COLLATERAL_RULES[h.assetType as AssetType];
-    weightedSum += rate * h.currentValue;
+
+    const returnRate = fr
+      ? getEffectiveRate(fr, h.assetType)
+      : (0.09);
+    const returnSource: "live" | "benchmark" =
+      fr?.source === "live" ? "live" : "benchmark";
+
+    if (returnSource === "live") liveDataCount++;
+    else benchmarkCount++;
+
+    weightedSum += returnRate * h.currentValue;
     holdingBreakdown.push({
       name: h.name,
       assetType: h.assetType,
       assetLabel: rule?.label ?? h.assetType,
-      benchmarkRate: rate,
+      returnRate,
+      returnSource,
       value: h.currentValue,
+      annualContribution: Math.round(returnRate * h.currentValue),
     });
   }
 
@@ -96,6 +126,8 @@ export async function getYieldAnalysis(riskAppetite: RiskAppetite = "moderate"):
     pledgeableValue,
     projectedMonthlyReturn,
     holdingBreakdown,
+    liveDataCount,
+    benchmarkCount,
   };
 
   if (pledgeableValue < 5000) throw new Error("Minimum ₹5,000 pledgeable margin required to model an overlay.");
@@ -133,9 +165,10 @@ export async function getYieldAnalysis(riskAppetite: RiskAppetite = "moderate"):
     score: strategy.score,
     aiPowered: strategy.aiPowered,
     explanation: strategy.explanation,
+    hvUsed: strategy.hvUsed,
+    isStale: marketData.isStale,
   };
 
-  // Monthly options income = annualised income / 12
   const annualOptionsIncome = best.maxProfit * (365 / best.expiry.dte);
   const monthlyOptionsIncome = Math.round(annualOptionsIncome / 12);
   const combinedMonthlyReturn = projectedMonthlyReturn + monthlyOptionsIncome;

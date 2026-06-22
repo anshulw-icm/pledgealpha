@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { YieldAnalysis } from "@/app/actions/yield";
-import { BENCHMARK_XIRR } from "@/lib/collateral-data";
+import { BENCHMARK_XIRR, NSE_LOT_SIZES, COLLATERAL_DATA_DATE } from "@/lib/collateral-data";
 import type { AssetType } from "@/lib/collateral-data";
 
 type RiskAppetite = "conservative" | "moderate" | "aggressive";
@@ -194,7 +194,11 @@ function HeroSection({
           <p className="text-[22px] font-semibold text-pa-text-2 num tracking-[-0.02em]">
             {INR(passive.projectedMonthlyReturn)}
           </p>
-          <p className="text-[11px] text-pa-text-4 mt-1.5">Category benchmark est.</p>
+          <p className="text-[11px] text-pa-text-4 mt-1.5">
+            {passive.liveDataCount > 0
+              ? `${passive.liveDataCount} live · ${passive.benchmarkCount} benchmark`
+              : "Category benchmark est."}
+          </p>
         </div>
 
         <div className="bg-pa-surface-1 border border-pa-profit/20 rounded-2xl p-5">
@@ -286,34 +290,50 @@ function ComparisonBarsSection({
   );
 }
 
-// ── Section 3: Benchmark rates table ─────────────────────────────────────────
+// ── Section 3: Return rates table ────────────────────────────────────────────
 
 function BenchmarkTableSection({ passive }: { passive: YieldAnalysis["passive"] }) {
   const rows = passive.holdingBreakdown;
   const shown = rows.slice(0, 6);
   const extra = rows.length - shown.length;
+  const total = rows.length;
 
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-[14px] font-medium text-pa-text-1">Benchmark Rates Used for Passive Estimate</p>
-        <p className="text-pa-text-3 text-[12px] mt-1 leading-relaxed">
-          Category average historical returns used to estimate passive yield. Not your actual portfolio returns.
-        </p>
+        <p className="text-[14px] font-medium text-pa-text-1">Return Rates Used for Passive Estimate</p>
+        {passive.liveDataCount > 0 ? (
+          <p className="text-pa-text-3 text-[12px] mt-1">
+            <span className="text-pa-profit">{passive.liveDataCount} of {total}</span> holdings using live 1-year NAV returns via mfapi.in
+            {passive.benchmarkCount > 0 && (
+              <span> · {passive.benchmarkCount} using category benchmarks (no scheme code)</span>
+            )}
+          </p>
+        ) : (
+          <p className="text-pa-text-3 text-[12px] mt-1 leading-relaxed">
+            No scheme codes available — using category benchmark rates. Upload a CAMS/KFintech statement with scheme codes for live returns.
+          </p>
+        )}
       </div>
 
       <div className="bg-pa-surface-1 border border-pa-border-1 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[1fr_100px_110px] gap-2 px-4 py-2.5 border-b border-pa-border-1 bg-pa-surface-2/40">
+        <div className="grid grid-cols-[1fr_100px_130px] gap-2 px-4 py-2.5 border-b border-pa-border-1 bg-pa-surface-2/40">
           <p className="text-[10px] tracking-[0.1em] uppercase text-pa-text-3">Holding</p>
           <p className="text-[10px] tracking-[0.1em] uppercase text-pa-text-3">Category</p>
-          <p className="text-[10px] tracking-[0.1em] uppercase text-pa-text-3 text-right">Benchmark p.a.</p>
+          <p className="text-[10px] tracking-[0.1em] uppercase text-pa-text-3 text-right">Return Rate p.a.</p>
         </div>
         <div className="divide-y divide-pa-border-1/40">
           {shown.map((h) => (
-            <div key={h.name} className="grid grid-cols-[1fr_100px_110px] gap-2 px-4 py-2.5 items-center">
+            <div key={h.name} className="grid grid-cols-[1fr_100px_130px] gap-2 px-4 py-2.5 items-center">
               <p className="text-[12px] text-pa-text-1 truncate">{h.name}</p>
               <p className="text-[11px] text-pa-text-3">{h.assetLabel}</p>
-              <p className="text-[12px] text-pa-text-2 num text-right">{(h.benchmarkRate * 100).toFixed(1)}%</p>
+              <div className="text-right">
+                {h.returnSource === "live" ? (
+                  <p className="text-[12px] text-pa-profit num">{(h.returnRate * 100).toFixed(1)}% <span className="text-[10px] font-normal opacity-70">1-yr actual</span></p>
+                ) : (
+                  <p className="text-[12px] text-pa-text-3 num">{(h.returnRate * 100).toFixed(1)}% <span className="text-[10px] opacity-70">benchmark</span></p>
+                )}
+              </div>
             </div>
           ))}
           {extra > 0 && (
@@ -325,8 +345,8 @@ function BenchmarkTableSection({ passive }: { passive: YieldAnalysis["passive"] 
       </div>
 
       <p className="text-pa-text-4 text-[11px] italic leading-relaxed">
-        Source: AMFI category average returns (5-year rolling).
-        Actual returns vary. Past performance does not guarantee future returns.
+        Live returns: actual 1-year NAV change from mfapi.in (24h cache). Benchmarks: AMFI category averages —
+        not your actual returns. Past performance does not guarantee future results.
       </p>
     </div>
   );
@@ -428,9 +448,10 @@ function StrategyCardSection({
         {/* Price used */}
         <p className="text-pa-text-3 text-[12px]">
           Priced at NIFTY {overlay.spotAtGeneration.toLocaleString("en-IN")} ·{" "}
-          {marketData.isStale
+          {overlay.isStale
             ? <span className="text-pa-warning">⚠ Fallback price</span>
-            : "Live price (5-min delay)"}
+            : "Live (5-min delay)"}
+          {" "}· Vol {(overlay.hvUsed * 100).toFixed(1)}% HV · BS model
         </p>
 
         {/* P&L — equal prominence */}
@@ -560,11 +581,11 @@ function MethodologySection({ passive }: { passive: YieldAnalysis["passive"] }) 
     },
     {
       title: "PASSIVE PORTFOLIO RETURN",
-      body: `Estimated using category benchmark XIRR rates weighted by your holding values. Rates: Large Cap MF ${(bx.MF_LARGE_CAP * 100).toFixed(0)}%, Mid Cap ${(bx.MF_MID_CAP * 100).toFixed(0)}%, Small Cap ${(bx.MF_SMALL_CAP * 100).toFixed(0)}%, Debt ${(bx.MF_DEBT * 100).toFixed(0)}%, Liquid ${(bx.MF_LIQUID * 100).toFixed(1)}%. These are historical category averages — NOT your actual returns. Your portfolio weighted average: ${(passive.weightedXIRR * 100).toFixed(1)}%`,
+      body: `Where available, estimated using actual 1-year NAV returns fetched from mfapi.in (free, no auth, 24h cache). Fallback category benchmarks: Large Cap MF ${(bx.MF_LARGE_CAP * 100).toFixed(1)}%, Mid Cap ${(bx.MF_MID_CAP * 100).toFixed(1)}%, Small Cap ${(bx.MF_SMALL_CAP * 100).toFixed(1)}%, Debt ${(bx.MF_DEBT * 100).toFixed(1)}%, Liquid ${(bx.MF_LIQUID * 100).toFixed(1)}%. These are NOT your actual returns. Your portfolio weighted average used: ${(passive.weightedXIRR * 100).toFixed(1)}% (${passive.liveDataCount} live, ${passive.benchmarkCount} benchmark).`,
     },
     {
       title: "MARGIN REQUIREMENTS",
-      body: "Shown as indicative figures (max loss × 1.25 for spreads, strike × lot size × 0.20 for cash-secured puts). Actual SPAN margin is set by your broker and varies daily.",
+      body: `Shown as indicative figures (max loss × 1.25 for spreads, strike × lot size × 0.20 for cash-secured puts). Lot sizes: NIFTY ${NSE_LOT_SIZES.NIFTY}, BANKNIFTY ${NSE_LOT_SIZES.BANKNIFTY} (as per NSE, ${COLLATERAL_DATA_DATE}). Haircut rates per SEBI/NSE circular (${COLLATERAL_DATA_DATE}). Actual SPAN margin is set by your broker and varies daily — verify with broker before trading.`,
     },
   ];
 

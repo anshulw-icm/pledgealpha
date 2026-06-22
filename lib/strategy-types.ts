@@ -28,6 +28,7 @@ export interface StrategyCandidate {
   breakevenUpper: number
   spotAtGeneration: number
   lotSize: number
+  hvUsed: number            // annualised historical vol used for BS pricing
 }
 
 export interface AIExplanation {

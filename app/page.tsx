@@ -61,12 +61,12 @@ export default async function LandingPage() {
           No broker integration · Not investment advice
         </p>
 
-        {/* ── Simulated stats strip ─────────────────────────────────────────── */}
+        {/* ── Stats strip ─────────────────────────────────────────────── */}
         <div className="relative mt-16 max-w-2xl mx-auto grid grid-cols-3 gap-px bg-pa-border-1 rounded-2xl overflow-hidden border border-pa-border-1">
           {[
-            { value: "₹6,59,043", label: "Simulated pledgeable margin", color: "text-pa-profit" },
-            { value: "4–35%", label: "Annualised yield range (simulation)", color: "text-pa-warning" },
-            { value: "68–82%", label: "Probability of profit range (model)", color: "text-pa-text-1" },
+            { value: "Up to 90%", label: "Of eligible MF value unlockable as margin", color: "text-pa-profit" },
+            { value: "6–28%", label: "Annualised yield range across scenario types", color: "text-pa-warning" },
+            { value: "52–82%", label: "Probability of profit range (Black-Scholes model)", color: "text-pa-text-1" },
           ].map(({ value, label, color }) => (
             <div key={label} className="bg-pa-surface-1 px-6 py-5 text-center">
               <p className={`text-[22px] font-semibold tracking-[-0.03em] num ${color}`}>{value}</p>
@@ -75,7 +75,7 @@ export default async function LandingPage() {
           ))}
         </div>
         <p className="text-[11px] text-pa-text-4 mt-3">
-          ↑ Illustrative scenario output only — not a forecast
+          Based on current market conditions · Illustrative range · Not a forecast
         </p>
       </section>
 

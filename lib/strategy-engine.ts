@@ -97,6 +97,7 @@ function buildCSP(ctx: Ctx): StrategyCandidate | null {
     breakevenUpper: breakeven,
     spotAtGeneration: spot,
     lotSize,
+    hvUsed: vol,
   }
 }
 
@@ -145,6 +146,7 @@ function buildBullPutSpread(ctx: Ctx): StrategyCandidate | null {
     breakevenUpper: breakeven,
     spotAtGeneration: spot,
     lotSize,
+    hvUsed: vol,
   }
 }
 
@@ -193,6 +195,7 @@ function buildBearCallSpread(ctx: Ctx): StrategyCandidate | null {
     breakevenUpper: breakeven,
     spotAtGeneration: spot,
     lotSize,
+    hvUsed: vol,
   }
 }
 
@@ -257,6 +260,7 @@ function buildIronCondor(ctx: Ctx): StrategyCandidate | null {
     breakevenUpper,
     spotAtGeneration: spot,
     lotSize,
+    hvUsed: vol,
   }
 }
 
