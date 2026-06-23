@@ -53,6 +53,13 @@ export interface ComparisonData {
   combinedMonthlyReturn: number;
   incrementalMonthlyRupees: number;
   incrementalAnnualRupees: number;
+  // Income calculation breakdown — for transparent display in the UI
+  evPerCycle: number;                   // EV = maxProfit×POP − maxLoss×(1−POP) per cycle
+  cyclesPerYear: number;                // 365 / dte
+  annualOptionsIncomeEV: number;        // evPerCycle × cyclesPerYear
+  monthlyOptionsIncomeEV: number;
+  annualOptionsIncomeBestCase: number;  // maxProfit × cyclesPerYear (best case)
+  monthlyOptionsIncomeBestCase: number;
 }
 
 export interface YieldAnalysis {
@@ -169,16 +176,31 @@ export async function getYieldAnalysis(riskAppetite: RiskAppetite = "moderate"):
     isStale: marketData.isStale,
   };
 
-  const annualOptionsIncome = best.maxProfit * (365 / best.expiry.dte);
-  const monthlyOptionsIncome = Math.round(annualOptionsIncome / 12);
-  const combinedMonthlyReturn = projectedMonthlyReturn + monthlyOptionsIncome;
-  const combinedXIRR = (totalValue * weightedXIRR + annualOptionsIncome) / totalValue;
+  const cyclesPerYear = 365 / best.expiry.dte;
+  // Expected value per cycle: probability-weighted outcome (honest projection)
+  const pop = best.probabilityOfProfit;
+  const evPerCycle = best.maxProfit * pop - best.maxLoss * (1 - pop);
+  const annualOptionsIncomeEV = evPerCycle * cyclesPerYear;
+  const monthlyOptionsIncomeEV = Math.round(annualOptionsIncomeEV / 12);
+  // Best-case (every trade hits max profit — shown for reference)
+  const annualOptionsIncomeBestCase = best.maxProfit * cyclesPerYear;
+  const monthlyOptionsIncomeBestCase = Math.round(annualOptionsIncomeBestCase / 12);
+
+  // Use expected value as the basis for combined projections
+  const combinedMonthlyReturn = projectedMonthlyReturn + monthlyOptionsIncomeEV;
+  const combinedXIRR = (totalValue * weightedXIRR + annualOptionsIncomeEV) / totalValue;
 
   const comparison: ComparisonData = {
     combinedXIRR,
     combinedMonthlyReturn,
-    incrementalMonthlyRupees: monthlyOptionsIncome,
-    incrementalAnnualRupees: monthlyOptionsIncome * 12,
+    incrementalMonthlyRupees: monthlyOptionsIncomeEV,
+    incrementalAnnualRupees: monthlyOptionsIncomeEV * 12,
+    evPerCycle: Math.round(evPerCycle),
+    cyclesPerYear: Math.round(cyclesPerYear * 10) / 10,
+    annualOptionsIncomeEV: Math.round(annualOptionsIncomeEV),
+    monthlyOptionsIncomeEV,
+    annualOptionsIncomeBestCase: Math.round(annualOptionsIncomeBestCase),
+    monthlyOptionsIncomeBestCase,
   };
 
   return {

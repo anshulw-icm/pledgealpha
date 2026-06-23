@@ -9,17 +9,17 @@
    All pa-* utilities are generated from these @theme entries.
 ─────────────────────────────────────────────────────────────────────────── */
 @theme {
-  --color-pa-black:     #000000;   /* The Vault — true black */
-  --color-pa-surface-1: #0A0A0A;   /* Card surfaces */
-  --color-pa-surface-2: #141414;   /* Elevated */
-  --color-pa-surface-3: #1C1C1E;   /* Modals */
-  --color-pa-border-1:  #1A1A1A;   /* Default border */
-  --color-pa-border-2:  #2A2A2A;   /* Hover border */
-  --color-pa-border-3:  #3A3A3A;   /* Active border */
+  --color-pa-black:     #131313;   /* Dark grey base — not pitch black */
+  --color-pa-surface-1: #1C1C1E;   /* Apple-style dark surface */
+  --color-pa-surface-2: #252527;   /* Elevated */
+  --color-pa-surface-3: #313133;   /* Modals */
+  --color-pa-border-1:  #2C2C2E;   /* Default border — visible */
+  --color-pa-border-2:  #3A3A3C;   /* Hover border */
+  --color-pa-border-3:  #4A4A4C;   /* Active border */
   --color-pa-text-1:    #F5F5F7;   /* Primary text */
-  --color-pa-text-2:    #86868B;   /* Secondary text */
-  --color-pa-text-3:    #515154;   /* Muted text */
-  --color-pa-text-4:    #3A3A3C;   /* Disabled */
+  --color-pa-text-2:    #98989D;   /* Secondary text — readable contrast */
+  --color-pa-text-3:    #838387;   /* Muted text — clearly visible */
+  --color-pa-text-4:    #5C5C60;   /* Disabled — accessible */
   --color-pa-profit:    #34C759;   /* Green — financial gain only */
   --color-pa-loss:      #FF3B30;   /* Red — financial loss only */
   --color-pa-warning:   #FF9500;   /* Orange */
@@ -71,11 +71,11 @@
 }
 
 :root {
-  --background: oklch(0.13 0 0);
+  --background: oklch(0.17 0 0);
   --foreground: oklch(0.97 0 0);
-  --card: oklch(0.18 0 0);
+  --card: oklch(0.21 0 0);
   --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.18 0 0);
+  --popover: oklch(0.21 0 0);
   --popover-foreground: oklch(0.97 0 0);
   --primary: oklch(0.97 0 0);
   --primary-foreground: oklch(0.13 0 0);
@@ -107,17 +107,17 @@
 
 /* ── CSS custom properties for inline-style usage (strategies-client etc.) ── */
 :root {
-  --pa-black:     #000000;
-  --pa-surface-1: #0A0A0A;
-  --pa-surface-2: #141414;
-  --pa-surface-3: #1C1C1E;
-  --pa-border-1:  #1A1A1A;
-  --pa-border-2:  #2A2A2A;
-  --pa-border-3:  #3A3A3A;
+  --pa-black:     #131313;
+  --pa-surface-1: #1C1C1E;
+  --pa-surface-2: #252527;
+  --pa-surface-3: #313133;
+  --pa-border-1:  #2C2C2E;
+  --pa-border-2:  #3A3A3C;
+  --pa-border-3:  #4A4A4C;
   --pa-text-1:    #F5F5F7;
-  --pa-text-2:    #86868B;
-  --pa-text-3:    #515154;
-  --pa-text-4:    #3A3A3C;
+  --pa-text-2:    #98989D;
+  --pa-text-3:    #838387;
+  --pa-text-4:    #5C5C60;
   --pa-profit:    #34C759;
   --pa-loss:      #FF3B30;
   --pa-warning:   #FF9500;
@@ -135,7 +135,7 @@
     font-family: var(--font-sans), "Space Grotesk", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #000000;
+    background-color: #131313;
     color: #F5F5F7;
     font-feature-settings: "ss01", "cv01";
   }

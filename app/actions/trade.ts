@@ -7,6 +7,9 @@ import { getPortfolio } from '@/app/actions/portfolio'
 import type { ExplainedStrategy } from '@/lib/strategy-types'
 import type { StrategyLeg } from '@/lib/strategy-types'
 import { NSE_LOT_SIZES } from '@/lib/collateral-data'
+import { bsPrice, bsTheta } from '@/lib/black-scholes'
+
+const R = 0.065 // risk-free rate
 
 export interface TradeResult {
   tradeId: string
@@ -28,15 +31,38 @@ export interface TradeResult {
   riskAppetite: string
 }
 
-function calcPnLAtSpot(legs: StrategyLeg[], lotSize: number, spot: number): number {
+// Black-Scholes mark-to-market: re-prices each leg at current spot + remaining DTE.
+// This correctly accounts for time value, unlike intrinsic-only (expiry payoff).
+function calcMTMPnL(
+  legs: StrategyLeg[],
+  lotSize: number,
+  currentSpot: number,
+  currentVol: number,
+  remainingDte: number,
+): number {
+  const T = Math.max(0.5 / 365, remainingDte / 365)
   return legs.reduce((total, leg) => {
-    const intrinsic = leg.type === 'call'
-      ? Math.max(0, spot - leg.strike)
-      : Math.max(0, leg.strike - spot)
+    const currentPrice = bsPrice(currentSpot, leg.strike, T, R, currentVol, leg.type)
     const perUnit = leg.position === 'long'
-      ? intrinsic - leg.premium
-      : leg.premium - intrinsic
+      ? currentPrice - leg.premium   // long: gain when price rises above entry
+      : leg.premium - currentPrice   // short: gain as price decays below entry premium
     return total + perUnit * lotSize
+  }, 0)
+}
+
+// Actual BS theta — index-point gain/loss from time decay today across all legs.
+function calcThetaToday(
+  legs: StrategyLeg[],
+  lotSize: number,
+  currentSpot: number,
+  currentVol: number,
+  remainingDte: number,
+): number {
+  const T = Math.max(0.5 / 365, remainingDte / 365)
+  return legs.reduce((total, leg) => {
+    const theta = bsTheta(currentSpot, leg.strike, T, R, currentVol, leg.type)
+    // theta is negative (option loses value per day). Short gains from that decay.
+    return total + (leg.position === 'short' ? -theta : theta) * lotSize
   }, 0)
 }
 
@@ -94,12 +120,13 @@ export async function getActiveTrades(): Promise<TradeResult[]> {
     const legs: StrategyLeg[] = JSON.parse(trade.legsJson)
     const lotSize = NSE_LOT_SIZES[trade.underlying as keyof typeof NSE_LOT_SIZES] ?? 75
     const currentSpot = trade.underlying === 'BANKNIFTY' ? market.banknifty : market.nifty
-
-    const currentPnL = calcPnLAtSpot(legs, lotSize, currentSpot)
+    const currentVol = trade.underlying === 'BANKNIFTY' ? market.bankniftyVol : market.niftyVol
 
     const expiryMs = new Date(trade.expiryIsoDate).getTime()
-    const dte = Math.max(1, (expiryMs - Date.now()) / (1000 * 60 * 60 * 24))
-    const thetaDecayToday = Math.abs(trade.netPremium) * lotSize * 0.02 / dte
+    const dte = Math.max(0.5, (expiryMs - Date.now()) / (1000 * 60 * 60 * 24))
+
+    const currentPnL = calcMTMPnL(legs, lotSize, currentSpot, currentVol, dte)
+    const thetaDecayToday = calcThetaToday(legs, lotSize, currentSpot, currentVol, dte)
 
     return {
       tradeId: trade.id,
@@ -146,9 +173,10 @@ export async function getTradeById(tradeId: string): Promise<TradeResult | null>
   const legs: StrategyLeg[] = JSON.parse(trade.legsJson)
   const lotSize = NSE_LOT_SIZES[trade.underlying as keyof typeof NSE_LOT_SIZES] ?? 75
   const currentSpot = trade.underlying === 'BANKNIFTY' ? market.banknifty : market.nifty
-  const currentPnL = calcPnLAtSpot(legs, lotSize, currentSpot)
-  const dte = Math.max(1, (new Date(trade.expiryIsoDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-  const thetaDecayToday = Math.abs(trade.netPremium) * lotSize * 0.02 / dte
+  const currentVol = trade.underlying === 'BANKNIFTY' ? market.bankniftyVol : market.niftyVol
+  const dte = Math.max(0.5, (new Date(trade.expiryIsoDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  const currentPnL = calcMTMPnL(legs, lotSize, currentSpot, currentVol, dte)
+  const thetaDecayToday = calcThetaToday(legs, lotSize, currentSpot, currentVol, dte)
 
   return {
     tradeId: trade.id,

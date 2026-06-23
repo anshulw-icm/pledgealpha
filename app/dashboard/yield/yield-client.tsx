@@ -361,23 +361,78 @@ function MonthlyTableSection({
   comparison: YieldAnalysis["comparison"];
   overlay: YieldAnalysis["overlay"];
 }) {
+  const pop = overlay.probabilityOfProfit;
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div>
         <p className="text-[16px] font-medium text-pa-text-1">Simulated Monthly Income</p>
-        <p className="text-pa-text-4 text-[12px] mt-1">
-          Assumes one strategy scenario per month — actual results vary
+        <p className="text-pa-text-3 text-[12px] mt-1">
+          Using expected value — probability-weighted outcome, not best-case
         </p>
       </div>
 
+      {/* Income formula breakdown */}
+      <div className="bg-pa-surface-1 border border-pa-border-1 rounded-xl p-4 space-y-3">
+        <p className="text-[11px] font-semibold tracking-[0.1em] text-pa-text-3 uppercase">How Income Is Calculated</p>
+
+        <div className="space-y-2">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[13px] text-pa-text-1">Step 1 · Expected value per trade cycle</p>
+              <p className="text-[11px] text-pa-text-3 mt-0.5 font-mono">
+                EV = (maxProfit × POP) − (maxLoss × (1−POP))
+              </p>
+              <p className="text-[11px] text-pa-text-3 mt-0.5 font-mono">
+                = ({INR(overlay.maxProfit)} × {(pop * 100).toFixed(0)}%) − ({INR(overlay.maxLoss)} × {((1 - pop) * 100).toFixed(0)}%)
+              </p>
+            </div>
+            <p className={`text-[15px] font-semibold num flex-shrink-0 ${comparison.evPerCycle >= 0 ? "text-pa-profit" : "text-pa-loss"}`}>
+              {comparison.evPerCycle >= 0 ? "+" : ""}{INR(comparison.evPerCycle)}
+            </p>
+          </div>
+
+          <div className="h-px bg-pa-border-1" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[13px] text-pa-text-1">Step 2 · Cycles per year</p>
+              <p className="text-[11px] text-pa-text-3 mt-0.5">365 days ÷ {overlay.expiryLabel} expiry cycle</p>
+            </div>
+            <p className="text-[15px] font-semibold text-pa-text-1 num">{comparison.cyclesPerYear.toFixed(1)}×</p>
+          </div>
+
+          <div className="h-px bg-pa-border-1" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[13px] text-pa-text-1">Annual options income (EV basis)</p>
+              <p className="text-[11px] text-pa-text-3 mt-0.5">EV × {comparison.cyclesPerYear.toFixed(1)} cycles</p>
+            </div>
+            <p className={`text-[15px] font-semibold num ${comparison.annualOptionsIncomeEV >= 0 ? "text-pa-profit" : "text-pa-loss"}`}>
+              {comparison.annualOptionsIncomeEV >= 0 ? "+" : ""}{INR(comparison.annualOptionsIncomeEV)} p.a.
+            </p>
+          </div>
+
+          <div className="h-px bg-pa-border-1" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[13px] text-pa-text-2">Best case (all trades hit max profit)</p>
+              <p className="text-[11px] text-pa-text-3 mt-0.5">{INR(overlay.maxProfit)} × {comparison.cyclesPerYear.toFixed(1)} · shown for reference only</p>
+            </div>
+            <p className="text-[13px] text-pa-text-3 num">{INR(comparison.annualOptionsIncomeBestCase)} p.a.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Monthly table */}
       <div className="bg-pa-surface-1 border border-pa-border-1 rounded-2xl overflow-hidden">
-        {/* Header */}
         <div className="grid grid-cols-4 gap-2 px-5 py-3 border-b border-pa-border-1 bg-pa-surface-2/40">
-          {["Month", "Passive Only", "With PledgeAlpha", "Monthly Uplift"].map((h) => (
+          {["Month", "Passive Only", "With Overlay (EV)", "Uplift (EV)"].map((h) => (
             <p key={h} className="text-[10px] tracking-[0.1em] uppercase text-pa-text-3">{h}</p>
           ))}
         </div>
-        {/* Rows */}
         {Array.from({ length: 6 }, (_, i) => (
           <div
             key={i}
@@ -386,14 +441,12 @@ function MonthlyTableSection({
             }`}
           >
             <p className="text-[12px] text-pa-text-2">Month {i + 1}</p>
-            <p className="text-[12px] text-pa-text-2 num">
-              {INR(passive.projectedMonthlyReturn)}
-            </p>
-            <p className="text-[12px] text-pa-profit num">
+            <p className="text-[12px] text-pa-text-2 num">{INR(passive.projectedMonthlyReturn)}</p>
+            <p className={`text-[12px] num font-medium ${comparison.combinedMonthlyReturn >= passive.projectedMonthlyReturn ? "text-pa-profit" : "text-pa-loss"}`}>
               {INR(comparison.combinedMonthlyReturn)}
             </p>
-            <p className="text-[12px] text-pa-profit font-medium num">
-              +{INR(comparison.incrementalMonthlyRupees)}
+            <p className={`text-[12px] font-medium num ${comparison.incrementalMonthlyRupees >= 0 ? "text-pa-profit" : "text-pa-loss"}`}>
+              {comparison.incrementalMonthlyRupees >= 0 ? "+" : ""}{INR(comparison.incrementalMonthlyRupees)}
             </p>
           </div>
         ))}
@@ -401,10 +454,10 @@ function MonthlyTableSection({
 
       <div className="space-y-1">
         <p className="text-pa-text-4 text-[11px]">
-          Passive return based on {PCT(passive.weightedXIRR)} weighted category benchmark XIRR — not your actual return
+          EV (expected value) = probability-weighted average outcome per trade cycle, not a guarantee. High-loss scenarios can occur.
         </p>
         <p className="text-pa-text-4 text-[11px]">
-          Options overlay based on {overlay.strategyName} scenario at current market conditions — not a recurring guaranteed return
+          Passive return: {PCT(passive.weightedXIRR)} weighted XIRR · Options overlay: {overlay.strategyName} at {overlay.expiryLabel} expiry · Simulated scenario only
         </p>
       </div>
     </div>
@@ -577,7 +630,11 @@ function MethodologySection({ passive }: { passive: YieldAnalysis["passive"] }) 
     },
     {
       title: "OPTIONS PRICING",
-      body: "Theoretical premiums calculated using the Black-Scholes model with live spot prices and 30-day historical volatility from Yahoo Finance. These are model estimates, not actual market quotes.",
+      body: "Theoretical premiums calculated using the Black-Scholes model with live spot prices and 30-day historical volatility (HV) from Yahoo Finance. HV is computed from daily closing prices — not implied volatility. These are model estimates, not actual market quotes.",
+    },
+    {
+      title: "INCOME PROJECTION FORMULA",
+      body: "Expected value per cycle = (maxProfit × POP) − (maxLoss × (1−POP)), where POP is the Black-Scholes probability of profit. This is then multiplied by the number of cycles per year (365 ÷ DTE). Using EV rather than best-case gives a more honest projection — it assumes some cycles will lose. High-loss scenarios can still occur even when EV is positive.",
     },
     {
       title: "PASSIVE PORTFOLIO RETURN",
