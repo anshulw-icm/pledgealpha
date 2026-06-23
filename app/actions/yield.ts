@@ -54,11 +54,12 @@ export interface ComparisonData {
   incrementalMonthlyRupees: number;
   incrementalAnnualRupees: number;
   // Income calculation breakdown — for transparent display in the UI
-  evPerCycle: number;                   // EV = maxProfit×POP − maxLoss×(1−POP) per cycle
+  maxProfitPerCycle: number;            // max profit per winning cycle
+  probabilityOfProfit: number;          // POP used
   cyclesPerYear: number;                // 365 / dte
-  annualOptionsIncomeEV: number;        // evPerCycle × cyclesPerYear
-  monthlyOptionsIncomeEV: number;
-  annualOptionsIncomeBestCase: number;  // maxProfit × cyclesPerYear (best case)
+  annualOptionsIncome: number;          // maxProfit × POP × cyclesPerYear (winning-cycles model)
+  monthlyOptionsIncome: number;
+  annualOptionsIncomeBestCase: number;  // maxProfit × cyclesPerYear (every trade wins)
   monthlyOptionsIncomeBestCase: number;
 }
 
@@ -203,28 +204,28 @@ export async function getYieldAnalysis(riskAppetite: RiskAppetite = "moderate"):
   };
 
   const cyclesPerYear = 365 / best.expiry.dte;
-  // Expected value per cycle: probability-weighted outcome (honest projection)
   const pop = best.probabilityOfProfit;
-  const evPerCycle = best.maxProfit * pop - best.maxLoss * (1 - pop);
-  const annualOptionsIncomeEV = evPerCycle * cyclesPerYear;
-  const monthlyOptionsIncomeEV = Math.round(annualOptionsIncomeEV / 12);
+  // Winning-cycles model: traders don't hold losing positions to max loss;
+  // they manage/close early. Project income only from winning cycles.
+  const annualOptionsIncome = best.maxProfit * pop * cyclesPerYear;
+  const monthlyOptionsIncome = Math.round(annualOptionsIncome / 12);
   // Best-case (every trade hits max profit — shown for reference)
   const annualOptionsIncomeBestCase = best.maxProfit * cyclesPerYear;
   const monthlyOptionsIncomeBestCase = Math.round(annualOptionsIncomeBestCase / 12);
 
-  // Use expected value as the basis for combined projections
-  const combinedMonthlyReturn = projectedMonthlyReturn + monthlyOptionsIncomeEV;
-  const combinedXIRR = (totalValue * weightedXIRR + annualOptionsIncomeEV) / totalValue;
+  const combinedMonthlyReturn = projectedMonthlyReturn + monthlyOptionsIncome;
+  const combinedXIRR = (totalValue * weightedXIRR + annualOptionsIncome) / totalValue;
 
   const comparison: ComparisonData = {
     combinedXIRR,
     combinedMonthlyReturn,
-    incrementalMonthlyRupees: monthlyOptionsIncomeEV,
-    incrementalAnnualRupees: monthlyOptionsIncomeEV * 12,
-    evPerCycle: Math.round(evPerCycle),
+    incrementalMonthlyRupees: monthlyOptionsIncome,
+    incrementalAnnualRupees: monthlyOptionsIncome * 12,
+    maxProfitPerCycle: Math.round(best.maxProfit),
+    probabilityOfProfit: pop,
     cyclesPerYear: Math.round(cyclesPerYear * 10) / 10,
-    annualOptionsIncomeEV: Math.round(annualOptionsIncomeEV),
-    monthlyOptionsIncomeEV,
+    annualOptionsIncome: Math.round(annualOptionsIncome),
+    monthlyOptionsIncome,
     annualOptionsIncomeBestCase: Math.round(annualOptionsIncomeBestCase),
     monthlyOptionsIncomeBestCase,
   };

@@ -372,14 +372,14 @@ function MonthlyTableSection({
   comparison: YieldAnalysis["comparison"];
   overlay: YieldAnalysis["overlay"];
 }) {
-  const pop = overlay.probabilityOfProfit;
+  const pop = comparison.probabilityOfProfit;
 
   return (
     <div className="space-y-4">
       <div>
         <p className="text-[16px] font-medium text-pa-text-1">Simulated Monthly Income</p>
         <p className="text-pa-text-3 text-[12px] mt-1">
-          Using expected value — probability-weighted outcome, not best-case
+          Winning-cycles model — projects income from trades that expire profitably
         </p>
       </div>
 
@@ -390,16 +390,13 @@ function MonthlyTableSection({
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[13px] text-pa-text-1">Step 1 · Expected value per trade cycle</p>
-              <p className="text-[11px] text-pa-text-3 mt-0.5 font-mono">
-                EV = (maxProfit × POP) − (maxLoss × (1−POP))
-              </p>
-              <p className="text-[11px] text-pa-text-3 mt-0.5 font-mono">
-                = ({INR(overlay.maxProfit)} × {(pop * 100).toFixed(0)}%) − ({INR(overlay.maxLoss)} × {((1 - pop) * 100).toFixed(0)}%)
+              <p className="text-[13px] text-pa-text-1">Step 1 · Max profit per winning cycle</p>
+              <p className="text-[11px] text-pa-text-3 mt-0.5">
+                Premium collected if trade expires in your favour (max profit scenario)
               </p>
             </div>
-            <p className={`text-[15px] font-semibold num flex-shrink-0 ${comparison.evPerCycle >= 0 ? "text-pa-profit" : "text-pa-loss"}`}>
-              {comparison.evPerCycle >= 0 ? "+" : ""}{INR(comparison.evPerCycle)}
+            <p className="text-[15px] font-semibold num text-pa-profit flex-shrink-0">
+              {INR(comparison.maxProfitPerCycle)}
             </p>
           </div>
 
@@ -407,7 +404,19 @@ function MonthlyTableSection({
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] text-pa-text-1">Step 2 · Cycles per year</p>
+              <p className="text-[13px] text-pa-text-1">Step 2 · Probability of profit (POP)</p>
+              <p className="text-[11px] text-pa-text-3 mt-0.5">
+                Black-Scholes risk-neutral probability of expiring in-the-money
+              </p>
+            </div>
+            <p className="text-[15px] font-semibold text-pa-text-1 num">{(pop * 100).toFixed(0)}%</p>
+          </div>
+
+          <div className="h-px bg-pa-border-1" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[13px] text-pa-text-1">Step 3 · Cycles per year</p>
               <p className="text-[11px] text-pa-text-3 mt-0.5">365 days ÷ {overlay.expiryLabel} expiry cycle</p>
             </div>
             <p className="text-[15px] font-semibold text-pa-text-1 num">{comparison.cyclesPerYear.toFixed(1)}×</p>
@@ -417,11 +426,13 @@ function MonthlyTableSection({
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] text-pa-text-1">Annual options income (EV basis)</p>
-              <p className="text-[11px] text-pa-text-3 mt-0.5">EV × {comparison.cyclesPerYear.toFixed(1)} cycles</p>
+              <p className="text-[13px] text-pa-text-1">Annual options income</p>
+              <p className="text-[11px] text-pa-text-3 mt-0.5 font-mono">
+                {INR(comparison.maxProfitPerCycle)} × {(pop * 100).toFixed(0)}% × {comparison.cyclesPerYear.toFixed(1)} cycles
+              </p>
             </div>
-            <p className={`text-[15px] font-semibold num ${comparison.annualOptionsIncomeEV >= 0 ? "text-pa-profit" : "text-pa-loss"}`}>
-              {comparison.annualOptionsIncomeEV >= 0 ? "+" : ""}{INR(comparison.annualOptionsIncomeEV)} p.a.
+            <p className="text-[15px] font-semibold text-pa-profit num">
+              +{INR(comparison.annualOptionsIncome)} p.a.
             </p>
           </div>
 
@@ -429,8 +440,8 @@ function MonthlyTableSection({
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[13px] text-pa-text-2">Best case (all trades hit max profit)</p>
-              <p className="text-[11px] text-pa-text-3 mt-0.5">{INR(overlay.maxProfit)} × {comparison.cyclesPerYear.toFixed(1)} · shown for reference only</p>
+              <p className="text-[13px] text-pa-text-2">Best case (100% win rate)</p>
+              <p className="text-[11px] text-pa-text-3 mt-0.5">{INR(comparison.maxProfitPerCycle)} × {comparison.cyclesPerYear.toFixed(1)} · for reference only</p>
             </div>
             <p className="text-[13px] text-pa-text-3 num">{INR(comparison.annualOptionsIncomeBestCase)} p.a.</p>
           </div>
@@ -440,7 +451,7 @@ function MonthlyTableSection({
       {/* Monthly table */}
       <div className="bg-pa-surface-1 border border-pa-border-1 rounded-2xl overflow-hidden">
         <div className="grid grid-cols-4 gap-2 px-5 py-3 border-b border-pa-border-1 bg-pa-surface-2/40">
-          {["Month", "Passive Only", "With Overlay (EV)", "Uplift (EV)"].map((h) => (
+          {["Month", "Passive Only", "With Overlay", "Uplift"].map((h) => (
             <p key={h} className="text-[10px] tracking-[0.1em] uppercase text-pa-text-3">{h}</p>
           ))}
         </div>
@@ -453,11 +464,11 @@ function MonthlyTableSection({
           >
             <p className="text-[12px] text-pa-text-2">Month {i + 1}</p>
             <p className="text-[12px] text-pa-text-2 num">{INR(passive.projectedMonthlyReturn)}</p>
-            <p className={`text-[12px] num font-medium ${comparison.combinedMonthlyReturn >= passive.projectedMonthlyReturn ? "text-pa-profit" : "text-pa-loss"}`}>
+            <p className="text-[12px] num font-medium text-pa-profit">
               {INR(comparison.combinedMonthlyReturn)}
             </p>
-            <p className={`text-[12px] font-medium num ${comparison.incrementalMonthlyRupees >= 0 ? "text-pa-profit" : "text-pa-loss"}`}>
-              {comparison.incrementalMonthlyRupees >= 0 ? "+" : ""}{INR(comparison.incrementalMonthlyRupees)}
+            <p className="text-[12px] font-medium num text-pa-profit">
+              +{INR(comparison.incrementalMonthlyRupees)}
             </p>
           </div>
         ))}
@@ -465,7 +476,7 @@ function MonthlyTableSection({
 
       <div className="space-y-1">
         <p className="text-pa-text-4 text-[11px]">
-          EV (expected value) = probability-weighted average outcome per trade cycle, not a guarantee. High-loss scenarios can occur.
+          Winning-cycles model: projects income assuming {(pop * 100).toFixed(0)}% of cycles expire profitably. Losing cycles are excluded — real traders close losing trades early, not at max loss.
         </p>
         <p className="text-pa-text-4 text-[11px]">
           Passive return: {PCT(passive.weightedXIRR)} weighted XIRR · Options overlay: {overlay.strategyName} at {overlay.expiryLabel} expiry · Simulated scenario only
