@@ -177,46 +177,57 @@ function HeroSection({
           {riskLabel} scenario · Simulated
         </p>
         <h1 className="text-[clamp(28px,5vw,44px)] font-semibold tracking-[-0.03em] leading-tight">
-          Your portfolio could generate
+          {animDelta >= 0 ? "Your portfolio could generate" : "This scenario reduces net return by"}
         </h1>
-        <p className="text-[clamp(36px,7vw,60px)] font-bold tracking-[-0.04em] text-pa-profit leading-none mt-1 num">
-          +{INR(animDelta)} / mo
+        <p className={`text-[clamp(36px,7vw,60px)] font-bold tracking-[-0.04em] leading-none mt-1 num ${animDelta >= 0 ? "text-pa-profit" : "text-pa-loss"}`}>
+          {animDelta > 0 ? "+" : ""}{INR(animDelta)} / mo
         </p>
         <p className="text-pa-text-3 text-[14px] mt-2">
-          extra income (simulated scenario) on top of passive returns
+          {animDelta >= 0
+            ? "extra income (simulated scenario) on top of passive returns"
+            : "expected-value drag vs passive-only · try Conservative or Moderate profile"}
         </p>
       </div>
 
       {/* 3-col comparison */}
-      <div className="grid grid-cols-3 gap-3 text-left">
-        <div className="bg-pa-surface-1 border border-pa-border-1 rounded-2xl p-5">
-          <p className="text-[10px] tracking-[0.14em] uppercase text-pa-text-3 mb-3">Passive Only</p>
-          <p className="text-[22px] font-semibold text-pa-text-2 num tracking-[-0.02em]">
-            {INR(passive.projectedMonthlyReturn)}
-          </p>
-          <p className="text-[11px] text-pa-text-4 mt-1.5">
-            {passive.liveDataCount > 0
-              ? `${passive.liveDataCount} live · ${passive.benchmarkCount} benchmark`
-              : "Category benchmark est."}
-          </p>
-        </div>
+      {(() => {
+        const upliftPositive = comparison.incrementalMonthlyRupees >= 0;
+        const overlayColor = upliftPositive ? "text-pa-profit" : "text-pa-loss";
+        const overlayBorder = upliftPositive ? "border-pa-profit/20" : "border-pa-loss/20";
+        return (
+          <div className="grid grid-cols-3 gap-3 text-left">
+            <div className="bg-pa-surface-1 border border-pa-border-1 rounded-2xl p-5">
+              <p className="text-[10px] tracking-[0.14em] uppercase text-pa-text-3 mb-3">Passive Only</p>
+              <p className="text-[22px] font-semibold text-pa-text-2 num tracking-[-0.02em]">
+                {INR(passive.projectedMonthlyReturn)}
+              </p>
+              <p className="text-[11px] text-pa-text-4 mt-1.5">
+                {passive.liveDataCount > 0
+                  ? `${passive.liveDataCount} live · ${passive.benchmarkCount} benchmark`
+                  : "Category benchmark est."}
+              </p>
+            </div>
 
-        <div className="bg-pa-surface-1 border border-pa-profit/20 rounded-2xl p-5">
-          <p className="text-[10px] tracking-[0.14em] uppercase text-pa-text-3 mb-3">With Overlay</p>
-          <p className="text-[22px] font-semibold text-pa-profit num tracking-[-0.02em]">
-            {INR(comparison.combinedMonthlyReturn)}
-          </p>
-          <p className="text-[11px] text-pa-text-4 mt-1.5">Simulated scenario</p>
-        </div>
+            <div className={`bg-pa-surface-1 border ${overlayBorder} rounded-2xl p-5`}>
+              <p className="text-[10px] tracking-[0.14em] uppercase text-pa-text-3 mb-3">With Overlay</p>
+              <p className={`text-[22px] font-semibold ${overlayColor} num tracking-[-0.02em]`}>
+                {INR(comparison.combinedMonthlyReturn)}
+              </p>
+              <p className="text-[11px] text-pa-text-4 mt-1.5">Simulated scenario</p>
+            </div>
 
-        <div className="bg-pa-surface-1 border border-pa-border-1 rounded-2xl p-5">
-          <p className="text-[10px] tracking-[0.14em] uppercase text-pa-text-3 mb-3">Annual Uplift</p>
-          <p className="text-[22px] font-semibold text-pa-profit num tracking-[-0.02em]">
-            {INR(comparison.incrementalAnnualRupees)}
-          </p>
-          <p className="text-[11px] text-pa-text-4 mt-1.5">If repeated monthly</p>
-        </div>
-      </div>
+            <div className={`bg-pa-surface-1 border ${upliftPositive ? "border-pa-border-1" : "border-pa-loss/20"} rounded-2xl p-5`}>
+              <p className="text-[10px] tracking-[0.14em] uppercase text-pa-text-3 mb-3">
+                {upliftPositive ? "Annual Uplift" : "Annual Drag"}
+              </p>
+              <p className={`text-[22px] font-semibold ${upliftPositive ? "text-pa-profit" : "text-pa-loss"} num tracking-[-0.02em]`}>
+                {upliftPositive ? "+" : ""}{INR(comparison.incrementalAnnualRupees)}
+              </p>
+              <p className="text-[11px] text-pa-text-4 mt-1.5">If repeated {upliftPositive ? "monthly" : "· expected-value basis"}</p>
+            </div>
+          </div>
+        );
+      })()}
 
       <p className="text-[11px] text-pa-text-4 text-center">
         Simulated scenario output only · Not a forecast · Educational platform

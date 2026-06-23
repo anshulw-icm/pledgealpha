@@ -53,8 +53,11 @@ function calcScore(
   ) * 100
 }
 
-function passes(premium: number, maxLoss: number, marginReq: number, pop: number, avail: number): boolean {
-  return premium > 0 && pop >= 0.50 && maxLoss <= avail * 0.60 && marginReq <= avail * 0.90
+// Require positive expected value — EV = maxProfit×POP − maxLoss×(1−POP) > 0.
+// This prevents negative-EV strategies from reaching users even if POP looks ok.
+function passes(premium: number, maxProfit: number, maxLoss: number, marginReq: number, pop: number, avail: number): boolean {
+  const ev = maxProfit * pop - maxLoss * (1 - pop)
+  return premium > 0 && ev > 0 && pop >= 0.50 && maxLoss <= avail * 0.60 && marginReq <= avail * 0.90
 }
 
 // ── Strategy builders ────────────────────────────────────────────────────────
@@ -74,10 +77,10 @@ function buildCSP(ctx: Ctx): StrategyCandidate | null {
   const marginReq = K * lotSize * 0.20
   const pop = probAbove(spot, breakeven, T, vol)
 
-  if (!passes(prem, maxLoss, marginReq, pop, margin)) return null
+  if (!passes(prem, maxProfit, maxLoss, marginReq, pop, margin)) return null
 
   const dte = expiry.dte
-  const annYield = (maxProfit / marginReq) * (365 / dte)
+  const annYield = Math.min((maxProfit / marginReq) * (365 / dte), 3.0)
   const legs: StrategyLeg[] = [{ type: 'put', strike: K, position: 'short', premium: prem, delta: bsDelta(spot, K, T, R, vol, 'put') }]
 
   return {
@@ -120,10 +123,10 @@ function buildBullPutSpread(ctx: Ctx): StrategyCandidate | null {
   const marginReq = maxLoss * 1.25
   const pop = probAbove(spot, breakeven, T, vol)
 
-  if (!passes(net, maxLoss, marginReq, pop, margin)) return null
+  if (!passes(net, maxProfit, maxLoss, marginReq, pop, margin)) return null
 
   const dte = expiry.dte
-  const annYield = (maxProfit / marginReq) * (365 / dte)
+  const annYield = Math.min((maxProfit / marginReq) * (365 / dte), 3.0)
   const legs: StrategyLeg[] = [
     { type: 'put', strike: Ks, position: 'short', premium: ps, delta: bsDelta(spot, Ks, T, R, vol, 'put') },
     { type: 'put', strike: Kl, position: 'long',  premium: pl, delta: bsDelta(spot, Kl, T, R, vol, 'put') },
@@ -169,10 +172,10 @@ function buildBearCallSpread(ctx: Ctx): StrategyCandidate | null {
   const marginReq = maxLoss * 1.25
   const pop = 1 - probAbove(spot, breakeven, T, vol)
 
-  if (!passes(net, maxLoss, marginReq, pop, margin)) return null
+  if (!passes(net, maxProfit, maxLoss, marginReq, pop, margin)) return null
 
   const dte = expiry.dte
-  const annYield = (maxProfit / marginReq) * (365 / dte)
+  const annYield = Math.min((maxProfit / marginReq) * (365 / dte), 3.0)
   const legs: StrategyLeg[] = [
     { type: 'call', strike: Ks, position: 'short', premium: ps, delta: bsDelta(spot, Ks, T, R, vol, 'call') },
     { type: 'call', strike: Kl, position: 'long',  premium: pl, delta: bsDelta(spot, Kl, T, R, vol, 'call') },
@@ -225,10 +228,10 @@ function buildIronCondor(ctx: Ctx): StrategyCandidate | null {
   const marginReq = maxLoss * 1.25
   const pop = probAbove(spot, breakevenLower, T, vol) - probAbove(spot, breakevenUpper, T, vol)
 
-  if (!passes(net, maxLoss, marginReq, pop, margin)) return null
+  if (!passes(net, maxProfit, maxLoss, marginReq, pop, margin)) return null
 
   const dte = expiry.dte
-  const annYield = (maxProfit / marginReq) * (365 / dte)
+  const annYield = Math.min((maxProfit / marginReq) * (365 / dte), 3.0)
 
   const legs: StrategyLeg[] = [
     { type: 'call', strike: Ksc, position: 'short', premium: psc, delta: bsDelta(spot, Ksc, T, R, vol, 'call') },
