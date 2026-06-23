@@ -156,7 +156,33 @@ export async function getYieldAnalysis(riskAppetite: RiskAppetite = "moderate"):
   if (candidates.length === 0) throw new Error("No viable strategy scenarios for your margin level.");
 
   const [best] = candidates;
-  const explained = await explainStrategies([best], pledgeableValue, riskAppetite);
+
+  // Build minimal portfolio summary for AI context in yield explanation
+  const byType: Record<string, number> = {};
+  for (const h of holdings) {
+    const label = COLLATERAL_RULES[h.assetType as AssetType]?.label ?? h.assetType;
+    byType[label] = (byType[label] ?? 0) + h.currentValue;
+  }
+  const portfolioSummary = {
+    totalValue,
+    pledgeableValue,
+    topHoldings: [...holdings]
+      .sort((a, b) => b.currentValue - a.currentValue)
+      .slice(0, 5)
+      .map(h => ({
+        name: h.name,
+        assetType: COLLATERAL_RULES[h.assetType as AssetType]?.label ?? h.assetType,
+        pct: (h.currentValue / totalValue) * 100,
+      })),
+    assetMix: Object.entries(byType)
+      .map(([label, value]) => ({ label, pct: (value / totalValue) * 100 }))
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 5),
+  };
+
+  const { strategies: explained } = await explainStrategies(
+    [best], pledgeableValue, riskAppetite, marketData, portfolioSummary
+  );
   const strategy = explained[0];
 
   const overlay: OverlayAnalysis = {

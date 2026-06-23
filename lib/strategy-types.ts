@@ -36,6 +36,7 @@ export interface AIExplanation {
   analogy: string
   riskWarning: string
   whySelected: string
+  portfolioFit: string   // how this strategy connects to the user's specific holdings
 }
 
 export interface ExplainedStrategy extends StrategyCandidate {
@@ -48,4 +49,5 @@ export interface StrategyResult {
   marginAvailable: number
   marketData: { nifty: number; banknifty: number; isStale: boolean }
   generatedAt: string
+  marketCommentary: string  // AI-generated market context (empty string if Groq failed)
 }

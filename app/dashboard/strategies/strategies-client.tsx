@@ -380,7 +380,7 @@ function ResultsView({
   onReset: () => void;
   riskOpt: typeof RISK_OPTIONS[number];
 }) {
-  const { strategies, marginAvailable, marketData } = result;
+  const { strategies, marginAvailable, marketData, marketCommentary } = result;
   const anyAI = strategies.some((s) => s.aiPowered);
   const [showCards, setShowCards] = useState(false);
   const [simulating, setSimulating] = useState<string | null>(null);
@@ -447,6 +447,26 @@ function ResultsView({
         <p style={{ fontSize: 11, color: "var(--pa-text-4)", textAlign: "center", marginBottom: 24, letterSpacing: "0.04em", textTransform: "uppercase" }}>
           Simulated scenarios · Educational only · Not investment advice
         </p>
+
+        {/* AI market commentary */}
+        {marketCommentary && (
+          <div style={{
+            marginBottom: 20, padding: "14px 18px", borderRadius: 12,
+            backgroundColor: "var(--pa-surface-1)",
+            border: "1px solid var(--pa-border-2)",
+            animation: "pa-fade-in 0.5s ease-out 0.3s both",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: riskOpt.zoneColor, flexShrink: 0 }} />
+              <span style={{ fontSize: 10, letterSpacing: "0.12em", color: "var(--pa-text-3)", fontWeight: 600, textTransform: "uppercase" }}>
+                AI Market Context · Groq / Llama 3.3 · Educational only
+              </span>
+            </div>
+            <p style={{ fontSize: 13, color: "var(--pa-text-2)", lineHeight: 1.65, margin: 0 }}>
+              {marketCommentary}
+            </p>
+          </div>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {strategies.map((s, i) => (
@@ -675,9 +695,14 @@ function StrategyCard({
           <div style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "var(--pa-loss)", marginTop: 4, flexShrink: 0 }} />
           <p style={{ fontSize: 12, color: "var(--pa-loss)", margin: 0 }}>{s.explanation.riskWarning}</p>
         </div>
-        <p style={{ fontSize: 11, color: "var(--pa-text-4)", margin: 0, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 11, color: "var(--pa-text-4)", margin: "0 0 6px", lineHeight: 1.5 }}>
           <span style={{ color: "var(--pa-text-3)" }}>Why selected: </span>{s.explanation.whySelected}
         </p>
+        {s.explanation.portfolioFit && (
+          <p style={{ fontSize: 11, color: "var(--pa-text-4)", margin: 0, lineHeight: 1.5 }}>
+            <span style={{ color: "var(--pa-text-3)" }}>Portfolio fit: </span>{s.explanation.portfolioFit}
+          </p>
+        )}
       </div>
 
       {/* Action buttons */}
